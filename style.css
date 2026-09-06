@@ -39,10 +39,6 @@ html, body {
   touch-action: none;
 }
 
-/* ==========================================================================
-   SCREEN CONTAINERS & 3D WEBGL CANVAS
-   ========================================================================== */
-
 #game-container {
   position: fixed;
   inset: 0;
@@ -66,7 +62,6 @@ html, body {
   pointer-events: auto;
 }
 
-/* Crosshair / Reticle for First-Person Aim */
 .crosshair {
   position: absolute;
   top: 50%;
@@ -95,7 +90,6 @@ html, body {
   box-shadow: 0 0 10px var(--color-amber), 0 0 18px rgba(230, 184, 0, 0.9);
 }
 
-/* Mobile Touch Look Zone (Right half of screen) */
 .touch-look-zone {
   position: absolute;
   top: 0;
@@ -107,7 +101,6 @@ html, body {
   display: none;
 }
 
-/* Pointer Lock Hint (Desktop) */
 .pointer-lock-hint {
   position: absolute;
   bottom: 24px;
@@ -129,10 +122,6 @@ html, body {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.9; }
 }
-
-/* ==========================================================================
-   HORROR POST-PROCESSING OVERLAYS
-   ========================================================================== */
 
 .vignette {
   position: absolute;
@@ -184,10 +173,6 @@ html, body {
   transition: opacity 0.3s ease;
 }
 
-/* ==========================================================================
-   HEADS-UP DISPLAY (HUD)
-   ========================================================================== */
-
 #hud {
   position: absolute;
   inset: 0;
@@ -233,7 +218,6 @@ html, body {
   color: var(--color-amber);
 }
 
-/* Objective Card */
 .objective-card {
   max-width: 320px;
 }
@@ -246,7 +230,6 @@ html, body {
   line-height: 1.25;
 }
 
-/* Keys Card */
 .keys-card {
   display: flex;
   flex-direction: column;
@@ -297,7 +280,6 @@ html, body {
   border-color: #fff;
 }
 
-/* Pulse / Heartbeat Card */
 .heart-card {
   min-width: 110px;
 }
@@ -360,7 +342,6 @@ html, body {
   background: var(--color-blood-bright);
 }
 
-/* In-Game Settings Button on HUD */
 .hud-settings-btn {
   background: rgba(10, 12, 18, 0.72);
   backdrop-filter: blur(10px);
@@ -384,7 +365,6 @@ html, body {
   transform: scale(1.05);
 }
 
-/* Interaction Prompt */
 .interaction-prompt {
   position: absolute;
   top: 58%;
@@ -425,7 +405,6 @@ html, body {
   letter-spacing: 0.5px;
 }
 
-/* Alert Banner */
 .alert-banner {
   position: absolute;
   top: 15%;
@@ -447,10 +426,6 @@ html, body {
   max-width: 90%;
   text-align: center;
 }
-
-/* ==========================================================================
-   MOBILE TOUCH CONTROLS
-   ========================================================================== */
 
 .mobile-controls {
   display: none;
@@ -552,10 +527,6 @@ html, body {
   transform: scale(0.92);
 }
 
-/* ==========================================================================
-   OVERLAYS (INTRO, SETTINGS, CINEMATIC, GAMEOVER, WIN)
-   ========================================================================== */
-
 .overlay {
   position: fixed;
   inset: 0;
@@ -587,7 +558,6 @@ html, body {
   pointer-events: auto !important;
 }
 
-/* Intro Start Screen */
 .intro-box {
   max-width: 580px;
   display: flex;
@@ -650,10 +620,6 @@ html, body {
   text-align: left;
 }
 
-/* ==========================================================================
-   BUTTON & INTERACTION MASTER RULES
-   ========================================================================== */
-
 button,
 .btn-horror,
 .btn-close-modal,
@@ -670,7 +636,6 @@ button,
   -webkit-user-select: none;
 }
 
-/* Ensure inner icons and spans inside buttons do not swallow or alter touch events */
 button * {
   pointer-events: none !important;
 }
@@ -698,7 +663,6 @@ button * {
   letter-spacing: 0.5px;
 }
 
-/* Button Styling */
 .btn-horror {
   position: relative;
   background: linear-gradient(180deg, #1b0204 0%, #300307 100%);
@@ -751,10 +715,6 @@ button * {
   margin-top: 10px;
   justify-content: center;
 }
-
-/* ==========================================================================
-   SETTINGS & CREDITS MODAL (GLASSMORPHISM)
-   ========================================================================== */
 
 #settings-overlay {
   z-index: 2500;
@@ -863,7 +823,6 @@ button * {
   color: var(--color-text-dim);
 }
 
-/* Custom Toggle Switch */
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -916,7 +875,6 @@ input:checked + .toggle-slider:before {
   background-color: #fff;
 }
 
-/* Range Slider */
 .range-slider {
   width: 120px;
   accent-color: var(--color-amber);
@@ -925,7 +883,6 @@ input:checked + .toggle-slider:before {
   touch-action: pan-x !important;
 }
 
-/* Developer Credits Card */
 .credit-badge {
   display: inline-block;
   font-size: 0.65rem;
@@ -1013,10 +970,6 @@ input:checked + .toggle-slider:before {
   gap: 8px;
 }
 
-/* ==========================================================================
-   CINEMATIC OPENING & WAKE-UP
-   ========================================================================== */
-
 #cinematic-overlay {
   background-color: #000;
   z-index: 1050;
@@ -1102,10 +1055,6 @@ input:checked + .toggle-slider:before {
   50% { opacity: 1; }
 }
 
-/* ==========================================================================
-   JUMPSCARE SCREEN
-   ========================================================================== */
-
 #jumpscare-overlay {
   background: radial-gradient(circle at center, #300000 0%, #000000 90%);
   z-index: 1800;
@@ -1179,10 +1128,6 @@ input:checked + .toggle-slider:before {
   0% { transform: translateY(0); }
   100% { transform: translateY(4px); }
 }
-
-/* ==========================================================================
-   GAME OVER & VICTORY SCREENS (DACIA DUSTER ENDING)
-   ========================================================================== */
 
 .ending-box {
   background: rgba(10, 10, 15, 0.92);
@@ -1263,7 +1208,6 @@ input:checked + .toggle-slider:before {
   pointer-events: auto !important;
 }
 
-/* Win Screen & Dacia Duster 2019 Styling */
 #win-overlay {
   z-index: 1300;
   pointer-events: auto !important;
@@ -1307,7 +1251,6 @@ input:checked + .toggle-slider:before {
   gap: 8px;
 }
 
-/* Moroccan Arabic Calligraphic Quote */
 .dacia-darija-quote {
   font-family: var(--font-arabic);
   direction: rtl;
@@ -1337,7 +1280,6 @@ input:checked + .toggle-slider:before {
   line-height: 1.45;
 }
 
-/* Specter Rearview Mirror Twist */
 .rearview-mirror-easteregg {
   display: flex;
   align-items: center;
@@ -1380,94 +1322,27 @@ input:checked + .toggle-slider:before {
   box-shadow: 0 0 40px rgba(255, 215, 0, 0.7);
 }
 
-/* ==========================================================================
-   RESPONSIVE DESIGN (TABLETS & PHONES)
-   ========================================================================== */
-
 @media (max-width: 768px) {
-  #hud {
-    padding: 10px;
-  }
-
-  .hud-top-bar {
-    gap: 6px;
-  }
-
-  .objective-card {
-    max-width: 150px;
-    padding: 6px 10px;
-  }
-
-  .objective-value {
-    font-size: 0.72rem;
-  }
-
-  .hud-card {
-    padding: 6px 10px;
-  }
-
-  .heart-card {
-    min-width: 80px;
-  }
-
-  #bpm-display {
-    font-size: 0.95rem;
-  }
-
-  .touch-look-zone {
-    display: block;
-  }
-
-  .mobile-controls {
-    display: flex;
-  }
-
-  .main-title {
-    font-size: 2rem;
-  }
-
-  .btn-horror {
-    padding: 12px 24px;
-    font-size: 0.9rem;
-  }
-
-  .settings-box.glassmorphism {
-    padding: 20px 16px;
-  }
-
-  .developer-name {
-    font-size: 0.95rem;
-  }
-
-  .dacia-win-box {
-    padding: 22px 18px;
-  }
-
-  .dacia-darija-quote {
-    font-size: 1rem;
-    padding: 10px 12px;
-  }
+  #hud { padding: 10px; }
+  .hud-top-bar { gap: 6px; }
+  .objective-card { max-width: 150px; padding: 6px 10px; }
+  .objective-value { font-size: 0.72rem; }
+  .hud-card { padding: 6px 10px; }
+  .heart-card { min-width: 80px; }
+  #bpm-display { font-size: 0.95rem; }
+  .touch-look-zone { display: block; }
+  .mobile-controls { display: flex; }
+  .main-title { font-size: 2rem; }
+  .btn-horror { padding: 12px 24px; font-size: 0.9rem; }
+  .settings-box.glassmorphism { padding: 20px 16px; }
+  .developer-name { font-size: 0.95rem; }
+  .dacia-win-box { padding: 22px 18px; }
+  .dacia-darija-quote { font-size: 1rem; padding: 10px 12px; }
 }
 
 @media (max-width: 480px) {
-  .hud-label {
-    font-size: 0.55rem;
-    letter-spacing: 1px;
-  }
-
-  .dpad-btn {
-    width: 50px;
-    height: 50px;
-  }
-
-  .dpad-center {
-    width: 32px;
-    height: 32px;
-  }
-
-  .mobile-action-btn {
-    width: 58px;
-    height: 58px;
-    font-size: 0.68rem;
-  }
+  .hud-label { font-size: 0.55rem; letter-spacing: 1px; }
+  .dpad-btn { width: 50px; height: 50px; }
+  .dpad-center { width: 32px; height: 32px; }
+  .mobile-action-btn { width: 58px; height: 58px; font-size: 0.68rem; }
 }
