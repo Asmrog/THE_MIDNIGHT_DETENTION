@@ -1,27 +1,23 @@
 /**
- * THE MIDNIGHT DETENTION (3D)
- * Built with Three.js (WebGL) & Procedural Web Audio API
+ * THE MIDNIGHT DETENTION - 3D First-Person Survival Horror Engine
+ * Built with Three.js (WebGL), Procedural 3D Textures & Audio,
+ * Dynamic SpotLight Flashlight with Shadows & Proximity Color Shifts,
+ * 3D Specter Entity AI (Debug Exploration Mode Toggleable),
+ * 3D Dacia Duster 2019 Getaway Vehicle & Cinematic Dawn Ending,
+ * Secret Easter Egg Desk ("ابراهيم أنور"), Glassmorphism Settings & Credits Modal.
  * 
- * Lead Developer: Ibrahim Anwar (ابراهيم أنور) - 2019
+ * Lead Developer: ابراهيم أنور (Ibrahim Anwar) - 2026
  * 
- * Features:
- * - Robust multi-layout keyboard support (WASD, ZQSD, Arrow keys, Arabic layout)
- * - Failsafe collision physics with sliding response
- * - Narrative Intro: Yassine (18 yo) car crash awakening at 3:00 AM
- * - 4 Thematic Rooms:
- *   1. Teacher's Room (Carved secret signature: "Ibrahim Anwar - 2019")
- *   2. Science Lab (Preserved specimen jars & creepy science benches)
- *   3. Library (Dusty bookshelves & ancient notebooks)
- *   4. Principal's Office (Executive desk & the final golden key)
- * - The Specter AI (sight & hearing chase, heartbeat acceleration, flashlight reaction)
- * - The Legendary Dacia Duster 2019 Escape & Moroccan Darija Ending
- * - FULL MOBILE SUPPORT: D-Pad, Touch Look, Action Buttons with zero-delay response
+ * FEATURES:
+ * - Advanced Heartbeat System (4 danger levels: Safe → Alert → Danger → Critical)
+ * - Full Mobile Support (D-Pad, Touch Look, Action Buttons with zero-delay)
+ * - Multi-layout Keyboard (WASD, ZQSD, Arrows, Arabic)
  */
 
 'use strict';
 
 /* ==========================================================================
-   1. PROCEDURAL WEB AUDIO ENGINE (Zero External Assets)
+   1. PROCEDURAL WEB AUDIO ENGINE (Zero External Dependencies)
    ========================================================================== */
 class HorrorAudioEngine {
   constructor() {
@@ -142,9 +138,10 @@ class HorrorAudioEngine {
     this.heartbeatBpm = Math.round(68 + intensity * 105);
   }
 
-  playHeartbeat() {
+  playHeartbeat(volumeMultiplier = 1.0) {
     if (!this.ctx || !this.initialized || this.isMuted) return;
     const t = this.ctx.currentTime;
+    const vol = Math.min(1.0, 0.7 * volumeMultiplier);
 
     const osc1 = this.ctx.createOscillator();
     const gain1 = this.ctx.createGain();
@@ -152,7 +149,7 @@ class HorrorAudioEngine {
     osc1.frequency.setValueAtTime(80, t);
     osc1.frequency.exponentialRampToValueAtTime(32, t + 0.12);
 
-    gain1.gain.setValueAtTime(0.7, t);
+    gain1.gain.setValueAtTime(vol, t);
     gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
 
     osc1.connect(gain1);
@@ -167,7 +164,7 @@ class HorrorAudioEngine {
     osc2.frequency.exponentialRampToValueAtTime(28, t + 0.28);
 
     gain2.gain.setValueAtTime(0, t);
-    gain2.gain.setValueAtTime(0.55, t + 0.14);
+    gain2.gain.setValueAtTime(vol * 0.8, t + 0.14);
     gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
 
     osc2.connect(gain2);
@@ -257,20 +254,37 @@ class HorrorAudioEngine {
     osc.stop(t + 0.3);
   }
 
-  playDoorUnlock() {
+  playDoorUnlockAndEscape() {
     if (!this.ctx || !this.initialized || this.isMuted) return;
     const t = this.ctx.currentTime;
+
     const oscBolt = this.ctx.createOscillator();
     const gainBolt = this.ctx.createGain();
     oscBolt.type = 'sawtooth';
     oscBolt.frequency.setValueAtTime(160, t);
-    oscBolt.frequency.exponentialRampToValueAtTime(70, t + 0.4);
+    oscBolt.frequency.exponentialRampToValueAtTime(80, t + 0.4);
     gainBolt.gain.setValueAtTime(0.5, t);
     gainBolt.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
     oscBolt.connect(gainBolt);
     gainBolt.connect(this.masterGain);
     oscBolt.start(t);
     oscBolt.stop(t + 0.46);
+
+    [261.63, 329.63, 392.00, 523.25].forEach((freq) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t + 0.3);
+
+      gain.gain.setValueAtTime(0.001, t + 0.3);
+      gain.gain.linearRampToValueAtTime(0.2, t + 1.5);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 4.5);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(t + 0.3);
+      osc.stop(t + 4.6);
+    });
   }
 
   playCarEngineStart() {
@@ -353,6 +367,80 @@ class HorrorAudioEngine {
 }
 
 /* ==========================================================================
+   1.5 HEARTBEAT SYSTEM - ADVANCED PROXIMITY DETECTION
+   ========================================================================== */
+class HeartbeatSystem {
+  constructor() {
+    this.bpm = 68;
+    this.baseBpm = 68;
+    this.maxBpm = 185;
+    this.dangerLevel = 0; // 0=safe, 1=alert, 2=danger, 3=critical
+    this.lastBeatTime = 0;
+    this.beatInterval = 0;
+    this.beatStrength = 1.0;
+    this.recoveryRate = 0.95;
+    this.attackRate = 1.8;
+    this.proximity = 0;
+    this.isChasing = false;
+  }
+
+  update(proximityRatio, chasing) {
+    this.proximity = proximityRatio;
+    this.isChasing = chasing;
+    
+    let targetBpm = this.baseBpm;
+    
+    if (proximityRatio > 0) {
+      const factor = Math.pow(proximityRatio, 1.8);
+      targetBpm = this.baseBpm + (this.maxBpm - this.baseBpm) * Math.min(factor, 1);
+      
+      if (chasing) {
+        targetBpm *= 1.2;
+        targetBpm = Math.min(targetBpm, this.maxBpm);
+      }
+    }
+
+    const rate = chasing ? this.attackRate : this.recoveryRate;
+    this.bpm += (targetBpm - this.bpm) * rate * 0.04;
+    this.bpm = Math.max(this.baseBpm, Math.min(this.maxBpm, this.bpm));
+
+    const normalizedBpm = (this.bpm - this.baseBpm) / (this.maxBpm - this.baseBpm);
+    if (normalizedBpm < 0.25) this.dangerLevel = 0;
+    else if (normalizedBpm < 0.50) this.dangerLevel = 1;
+    else if (normalizedBpm < 0.75) this.dangerLevel = 2;
+    else this.dangerLevel = 3;
+
+    this.beatInterval = 60 / this.bpm;
+    this.beatStrength = 1 + normalizedBpm * 2.5;
+
+    return this.bpm;
+  }
+
+  getPulseColor() {
+    switch(this.dangerLevel) {
+      case 0: 
+        return { bg: '#3aff6c', shadow: '0 0 8px #3aff6c', label: 'Safe', color: '#3aff6c' };
+      case 1: 
+        return { bg: '#ffcc00', shadow: '0 0 12px #ffcc00', label: 'Alert', color: '#ffcc00' };
+      case 2: 
+        return { bg: '#ff8800', shadow: '0 0 16px #ff8800', label: 'Danger', color: '#ff8800' };
+      case 3: 
+        return { bg: '#ff1e2e', shadow: '0 0 20px #ff1e2e', label: 'Critical', color: '#ff1e2e' };
+    }
+  }
+
+  getVignetteIntensity() {
+    const normalized = (this.bpm - this.baseBpm) / (this.maxBpm - this.baseBpm);
+    return Math.min(0.9, normalized * 1.2);
+  }
+
+  getHeartBarWidth() {
+    const normalized = (this.bpm - this.baseBpm) / (this.maxBpm - this.baseBpm);
+    return Math.min(100, Math.round(25 + normalized * 75));
+  }
+}
+
+/* ==========================================================================
    2. PROCEDURAL 3D TEXTURE GENERATORS
    ========================================================================== */
 class TextureFactory {
@@ -362,30 +450,21 @@ class TextureFactory {
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = '#3c433e';
+    ctx.fillStyle = '#424945';
     ctx.fillRect(0, 0, 512, 512);
 
-    ctx.fillStyle = '#5c6560';
+    ctx.fillStyle = '#68726e';
     ctx.fillRect(0, 0, 512, 340);
 
-    for (let i = 0; i < 700; i++) {
-      ctx.fillStyle = Math.random() < 0.5 ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.03)';
-      ctx.fillRect(Math.random() * 512, Math.random() * 512, 2 + Math.random() * 6, 2 + Math.random() * 6);
+    for (let i = 0; i < 600; i++) {
+      ctx.fillStyle = Math.random() < 0.5 ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+      ctx.fillRect(Math.random() * 512, Math.random() * 512, 2 + Math.random() * 5, 2 + Math.random() * 5);
     }
 
-    ctx.strokeStyle = 'rgba(10, 15, 10, 0.4)';
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 5; i++) {
-      ctx.beginPath();
-      ctx.moveTo(Math.random() * 512, Math.random() * 300);
-      ctx.lineTo(Math.random() * 512, Math.random() * 300);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = '#1a120e';
+    ctx.fillStyle = '#1e1612';
     ctx.fillRect(0, 480, 512, 32);
 
-    ctx.fillStyle = '#1e221f';
+    ctx.fillStyle = '#222624';
     ctx.fillRect(0, 335, 512, 10);
 
     const texture = new THREE.CanvasTexture(canvas);
@@ -400,23 +479,23 @@ class TextureFactory {
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = '#181a20';
+    ctx.fillStyle = '#1c1e24';
     ctx.fillRect(0, 0, 512, 512);
 
     const tileSize = 64;
     for (let y = 0; y < 512; y += tileSize) {
       for (let x = 0; x < 512; x += tileSize) {
         if ((x / tileSize + y / tileSize) % 2 === 0) {
-          ctx.fillStyle = '#262932';
+          ctx.fillStyle = '#2b2f3a';
           ctx.fillRect(x, y, tileSize, tileSize);
         }
-        ctx.strokeStyle = '#0f1115';
+        ctx.strokeStyle = '#121418';
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, tileSize, tileSize);
       }
     }
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     for (let i = 0; i < 40; i++) {
       ctx.beginPath();
       ctx.moveTo(Math.random() * 512, Math.random() * 512);
@@ -437,15 +516,15 @@ class TextureFactory {
     canvas.height = 256;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = '#22242a';
+    ctx.fillStyle = '#282a30';
     ctx.fillRect(0, 0, 256, 256);
 
-    ctx.strokeStyle = '#101114';
+    ctx.strokeStyle = '#141518';
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, 256, 256);
 
-    ctx.fillStyle = '#16171c';
-    for (let i = 0; i < 150; i++) {
+    ctx.fillStyle = '#1a1b20';
+    for (let i = 0; i < 180; i++) {
       ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
     }
 
@@ -456,30 +535,30 @@ class TextureFactory {
     return texture;
   }
 
-  static createChalkboardTexture(roomTitle = "ROOM 101 - DETENTION") {
+  static createChalkboardTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 256;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = '#16221a';
+    ctx.fillStyle = '#1a261e';
     ctx.fillRect(0, 0, 512, 256);
 
-    ctx.strokeStyle = '#382516';
+    ctx.strokeStyle = '#3c2818';
     ctx.lineWidth = 14;
     ctx.strokeRect(0, 0, 512, 256);
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-    ctx.font = '22px "Special Elite", monospace';
-    ctx.fillText(roomTitle, 40, 60);
-    ctx.fillText("TIME: 3:00 AM", 40, 105);
-    ctx.fillText("WHERE DID EVERYONE GO?", 40, 150);
+    ctx.font = '24px "Special Elite", monospace';
+    ctx.fillText("TIME: 3:00 AM", 40, 60);
+    ctx.fillText("DETENTION IS FOREVER", 40, 110);
+    ctx.fillText("GET TO THE DUSTER...", 40, 160);
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(310, 45);
-    ctx.lineTo(460, 205);
+    ctx.moveTo(320, 40);
+    ctx.lineTo(470, 210);
     ctx.stroke();
 
     return new THREE.CanvasTexture(canvas);
@@ -491,22 +570,22 @@ class TextureFactory {
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = '#222e35';
+    ctx.fillStyle = '#26343c';
     ctx.fillRect(0, 0, 256, 512);
 
     const lw = 256 / 3;
     for (let i = 0; i < 3; i++) {
       const x = i * lw;
-      ctx.strokeStyle = '#10161a';
+      ctx.strokeStyle = '#12191d';
       ctx.lineWidth = 3;
       ctx.strokeRect(x + 2, 4, lw - 4, 504);
 
-      ctx.fillStyle = '#0d1215';
+      ctx.fillStyle = '#0f1418';
       for (let v = 0; v < 5; v++) {
         ctx.fillRect(x + 12, 40 + v * 12, lw - 24, 4);
       }
 
-      ctx.fillStyle = '#9ca4b0';
+      ctx.fillStyle = '#b0b8c4';
       ctx.fillRect(x + lw - 18, 240, 8, 30);
     }
 
@@ -516,23 +595,23 @@ class TextureFactory {
     return texture;
   }
 
-  /* Secret Signature Desk: "Ibrahim Anwar - 2019" */
-  static createCarvedSignatureDeskTexture() {
+  /* Secret Easter Egg Desk: "ابراهيم أنور" (Ibrahim Anwar) - 2026 */
+  static createCarvedDeskTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = '#24160f';
+    ctx.fillStyle = '#261710';
     ctx.fillRect(0, 0, 512, 512);
 
     for (let i = 0; i < 512; i += 4) {
-      const shade = 30 + Math.floor(Math.sin(i * 0.08) * 8) + Math.floor(Math.random() * 6);
+      const shade = 32 + Math.floor(Math.sin(i * 0.08) * 8) + Math.floor(Math.random() * 6);
       ctx.fillStyle = `rgb(${shade + 10}, ${shade}, ${Math.max(10, shade - 8)})`;
       ctx.fillRect(0, i, 512, 3);
     }
 
-    ctx.strokeStyle = '#120905';
+    ctx.strokeStyle = '#140a06';
     ctx.lineWidth = 14;
     ctx.strokeRect(0, 0, 512, 512);
 
@@ -549,29 +628,34 @@ class TextureFactory {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    ctx.strokeStyle = '#3e2415';
+    ctx.strokeStyle = '#422818';
     ctx.lineWidth = 3;
-    ctx.strokeRect(70, 160, 372, 190);
+    ctx.strokeRect(88, 160, 336, 190);
 
-    ctx.strokeStyle = '#0a0402';
+    ctx.strokeStyle = '#0e0603';
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(76, 166, 360, 178);
+    ctx.strokeRect(94, 166, 324, 178);
 
-    ctx.font = 'bold 28px "Cinzel", serif';
+    // Arabic Name
+    ctx.font = 'bold 44px "Cinzel", "Traditional Arabic", serif';
+    ctx.fillStyle = '#0a0402';
+    ctx.fillText('ابراهيم أنور', 256 + 2, 218 + 2);
+    ctx.fillStyle = '#d49b32';
+    ctx.fillText('ابراهيم أنور', 256, 218);
+
+    // English Name - 2026
+    ctx.font = 'bold 22px "Cinzel", serif';
+    ctx.fillStyle = '#0a0402';
+    ctx.fillText('IBRAHIM ANWAR - 2026', 256 + 1.5, 272 + 1.5);
+    ctx.fillStyle = '#f0c242';
+    ctx.fillText('IBRAHIM ANWAR - 2026', 256, 272);
+
+    // Tag
+    ctx.font = 'bold 13px "Inter", monospace';
     ctx.fillStyle = '#080302';
-    ctx.fillText('Ibrahim Anwar - 2019', 256 + 2, 230 + 2);
-    ctx.fillStyle = '#e5b035';
-    ctx.fillText('Ibrahim Anwar - 2019', 256, 230);
-
-    ctx.font = 'bold 24px "Cairo", serif';
-    ctx.fillStyle = '#080302';
-    ctx.fillText('ابراهيم أنور', 256 + 1.5, 275 + 1.5);
-    ctx.fillStyle = '#ffd700';
-    ctx.fillText('ابراهيم أنور', 256, 275);
-
-    ctx.font = 'bold 12px "Inter", monospace';
-    ctx.fillStyle = '#a68242';
-    ctx.fillText('• LEAD DEVELOPER •', 256, 315);
+    ctx.fillText('• LEAD DEVELOPER •', 256 + 1, 312 + 1);
+    ctx.fillStyle = '#b89052';
+    ctx.fillText('• LEAD DEVELOPER •', 256, 312);
 
     ctx.restore();
 
@@ -583,27 +667,27 @@ class TextureFactory {
 }
 
 /* ==========================================================================
-   3. 3D SCHOOL MAP LAYOUT & 4 ROOMS
+   3. 3D SCHOOL MAP LAYOUT & CELL DEFINITIONS
    ========================================================================== */
 const CELL_SIZE = 4.0;
 const WALL_HEIGHT = 3.6;
 
 const SCHOOL_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 3, 3, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 4, 4, 1],
-  [1, 3, 3, 3, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 4, 4, 4, 1],
-  [1, 3, 3, 3, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 4, 4, 4, 1],
-  [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1],
+  [1, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 4, 4, 1],
+  [1, 2, 2, 2, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 4, 4, 4, 1],
+  [1, 2, 2, 2, 0, 0, 1, 3, 3, 1, 0, 0, 1, 3, 3, 1, 0, 0, 4, 4, 4, 1],
+  [1, 1, 1, 0, 1, 0, 1, 3, 3, 1, 0, 0, 1, 3, 3, 1, 0, 1, 0, 1, 1, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
   [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1],
-  [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1],
-  [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1],
+  [1, 3, 3, 0, 1, 0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 1, 0, 3, 3, 1],
+  [1, 3, 3, 0, 1, 0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 1, 0, 3, 3, 1],
   [1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-  [1, 5, 5, 5, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 6, 6, 6, 1],
-  [1, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 1],
-  [1, 5, 5, 5, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 6, 6, 6, 1],
+  [1, 5, 5, 5, 1, 0, 1, 4, 4, 1, 0, 0, 1, 4, 4, 1, 0, 1, 2, 2, 2, 1],
+  [1, 5, 5, 5, 0, 0, 0, 4, 4, 0, 0, 0, 0, 4, 4, 0, 0, 0, 2, 2, 2, 1],
+  [1, 5, 5, 5, 1, 0, 1, 4, 4, 1, 0, 0, 1, 4, 4, 1, 0, 1, 2, 2, 2, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ];
 
@@ -611,7 +695,7 @@ const GRID_ROWS = SCHOOL_GRID.length;
 const GRID_COLS = SCHOOL_GRID[0].length;
 
 /* ==========================================================================
-   4. MAIN 3D HORROR GAME ENGINE
+   4. MAIN 3D SURVIVAL HORROR GAME ENGINE
    ========================================================================== */
 class MidnightDetention3D {
   constructor() {
@@ -622,7 +706,8 @@ class MidnightDetention3D {
     this.startTime = 0;
     this.entityEncounters = 0;
     this.isSettingsOpen = false;
-    this.ghostAIEnabled = true;
+
+    this.ghostAIEnabled = false;
 
     this.scene = null;
     this.camera = null;
@@ -637,10 +722,10 @@ class MidnightDetention3D {
     this.flickerIntensity = 0;
 
     this.player = {
-      position: new THREE.Vector3(10.0, 1.7, 53.5),
+      position: new THREE.Vector3(2 * CELL_SIZE + CELL_SIZE / 2, 1.7, 13 * CELL_SIZE + CELL_SIZE / 2),
       rotation: new THREE.Euler(0, 0, 0, 'YXZ'),
       speed: 4.8,
-      radius: 0.45,
+      radius: 0.55,
       isMoving: false,
       stepTimer: 0,
       headBob: 0
@@ -661,13 +746,14 @@ class MidnightDetention3D {
 
     this.keyObjects = [];
     this.keyData = [
-      { id: 0, name: "Teacher's Room Key", roomName: "Teacher's Detention Room", cellX: 2, cellZ: 12, collected: false },
-      { id: 1, name: "Science Lab Key", roomName: "Science Laboratory", cellX: 19, cellZ: 2, collected: false },
-      { id: 2, name: "Library Key", roomName: "The Abandoned Library", cellX: 2, cellZ: 2, collected: false },
-      { id: 3, name: "Principal's Golden Key", roomName: "Principal's Office", cellX: 19, cellZ: 13, collected: false }
+      { id: 0, name: "Detention Teacher's Key", cellX: 3, cellZ: 13, collected: false },
+      { id: 1, name: "Science Lab Master Key", cellX: 19, cellZ: 2, collected: false },
+      { id: 2, name: "Library Archive Key", cellX: 2, cellZ: 2, collected: false },
+      { id: 3, name: "Principal's Golden Key", cellX: 19, cellZ: 13, collected: false }
     ];
 
-    this.signatureDeskPos = null;
+    this.easterEggDesk = null;
+    this.easterEggDeskPos = null;
 
     this.exitGateMesh = null;
     this.exitCollider = null;
@@ -683,12 +769,15 @@ class MidnightDetention3D {
       position: new THREE.Vector3(11 * CELL_SIZE, 1.7, 4 * CELL_SIZE),
       targetPos: new THREE.Vector3(11 * CELL_SIZE, 1.7, 4 * CELL_SIZE),
       speed: 3.2,
-      chaseSpeed: 5.5,
+      chaseSpeed: 5.6,
       isChasing: false,
       patrolTimer: 0,
       bobTimer: 0,
-      radius: 0.75
+      radius: 0.8
     };
+
+    // Heartbeat system
+    this.heartbeat = new HeartbeatSystem();
 
     this.ui = {
       startOverlay: document.getElementById('start-overlay'),
@@ -883,9 +972,10 @@ class MidnightDetention3D {
     }
   }
 
+  /* Room 1 Desk: Ibrahim Anwar - 2026 Signature */
   createSecretDesk(x, z) {
     const deskGroup = new THREE.Group();
-    const carvedTex = TextureFactory.createCarvedSignatureDeskTexture();
+    const carvedTex = TextureFactory.createCarvedDeskTexture();
     const woodMat = new THREE.MeshStandardMaterial({ map: carvedTex, roughness: 0.65, metalness: 0.15 });
     const metalMat = new THREE.MeshStandardMaterial({ color: 0x111115, metalness: 0.7, roughness: 0.4 });
 
@@ -906,9 +996,10 @@ class MidnightDetention3D {
     deskGroup.position.set(x, 0, z);
     this.scene.add(deskGroup);
     this.colliders.push(new THREE.Box3().setFromObject(deskGroup));
-    this.signatureDeskPos = new THREE.Vector3(x, 0.85, z);
+    this.easterEggDeskPos = new THREE.Vector3(x, 0.85, z);
   }
 
+  /* Room 2: Science Lab Table with Jars */
   createScienceLabTable(x, z) {
     const group = new THREE.Group();
     const slateMat = new THREE.MeshStandardMaterial({ color: 0x181c20, roughness: 0.5 });
@@ -929,6 +1020,7 @@ class MidnightDetention3D {
     this.colliders.push(new THREE.Box3().setFromObject(group));
   }
 
+  /* Room 3: Library Bookshelf */
   createBookshelf(x, z) {
     const group = new THREE.Group();
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x2c1a12, roughness: 0.8 });
@@ -942,6 +1034,7 @@ class MidnightDetention3D {
     this.colliders.push(new THREE.Box3().setFromObject(group));
   }
 
+  /* Room 4: Principal's Executive Office */
   createPrincipalOffice(x, z) {
     const group = new THREE.Group();
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x3d1c12, roughness: 0.7 });
@@ -1217,7 +1310,7 @@ class MidnightDetention3D {
   }
 
   /* ==========================================================================
-     UNIVERSAL TAP & CLICK BINDER (ZERO-DELAY MOBILE TOUCH & DESKTOP CLICK)
+     UNIVERSAL TAP & CLICK BINDER (FIXED FOR MOBILE)
      ========================================================================== */
   bindTapOrClick(target, callback) {
     const el = (typeof target === 'string') ? document.getElementById(target) : target;
@@ -1232,12 +1325,10 @@ class MidnightDetention3D {
       callback(e);
     };
 
+    // Use touchstart for immediate response on mobile
     el.addEventListener('touchstart', (e) => {
-      if (el.closest('button') || el.closest('.btn-horror') || 
-          el.closest('.mobile-action-btn') || el.closest('.dpad-btn') ||
-          el.closest('.hud-settings-btn')) {
-        e.preventDefault();
-      }
+      e.preventDefault();
+      e.stopPropagation();
       touchHandled = true;
       el.dataset.touchHandled = 'true';
       execute(e);
@@ -1248,7 +1339,7 @@ class MidnightDetention3D {
       setTimeout(() => {
         touchHandled = false;
         delete el.dataset.touchHandled;
-      }, 100);
+      }, 300);
     }, { passive: false });
 
     el.addEventListener('touchcancel', () => {
@@ -1262,6 +1353,7 @@ class MidnightDetention3D {
         e.stopPropagation();
         return;
       }
+      e.stopPropagation();
       execute(e);
     });
   }
@@ -1619,18 +1711,18 @@ class MidnightDetention3D {
           k.group.visible = false;
           this.audio.playKeyPickup();
           this.updateHUDKeys();
-          this.showAlertBanner(`FOUND: ${k.data.name}! (${k.data.roomName})`);
+          this.showAlertBanner(`FOUND: ${k.data.name}!`);
           return;
         }
       }
     }
 
-    if (this.signatureDeskPos) {
-      const distToDesk = this.player.position.distanceTo(this.signatureDeskPos);
+    if (this.easterEggDeskPos) {
+      const distToDesk = this.player.position.distanceTo(this.easterEggDeskPos);
       if (distToDesk < 2.6) {
         this.audio.playKeyPickup();
         this.triggerScreenShake(0.35, 4);
-        this.showAlertBanner("SECRET SIGNATURE: Carved into the desk: Ibrahim Anwar - 2019 (ابراهيم أنور)!");
+        this.showAlertBanner("SECRET SIGNATURE: Carved into the desk: Ibrahim Anwar - 2026 (ابراهيم أنور)!");
         return;
       }
     }
@@ -1664,7 +1756,7 @@ class MidnightDetention3D {
 
   openExitDoors() {
     this.doorsOpened = true;
-    this.audio.playDoorUnlock();
+    this.audio.playDoorUnlockAndEscape();
     this.triggerScreenShake(1.5, 6);
 
     if (this.exitGateMesh) {
@@ -1790,11 +1882,15 @@ class MidnightDetention3D {
       return;
     }
 
-    const bpmInterval = 60 / this.audio.heartbeatBpm;
-    const now = performance.now() / 1000;
-    if (now - this.lastHeartbeatTime > bpmInterval) {
-      this.lastHeartbeatTime = now;
-      this.audio.playHeartbeat();
+    // Heartbeat sound using advanced system
+    if (this.heartbeat) {
+      const bpmInterval = 60 / this.heartbeat.bpm;
+      const now = performance.now() / 1000;
+      if (now - this.lastHeartbeatTime > bpmInterval) {
+        this.lastHeartbeatTime = now;
+        const volMultiplier = 1 + this.heartbeat.dangerLevel * 0.3;
+        this.audio.playHeartbeat(volMultiplier);
+      }
     }
 
     this.checkInteractionPrompt();
@@ -1815,11 +1911,11 @@ class MidnightDetention3D {
       }
     }
 
-    if (!show && this.signatureDeskPos) {
-      const distToDesk = this.player.position.distanceTo(this.signatureDeskPos);
+    if (!show && this.easterEggDeskPos) {
+      const distToDesk = this.player.position.distanceTo(this.easterEggDeskPos);
       if (distToDesk < 2.6) {
         show = true;
-        label = "Inspect Carved Desk [Ibrahim Anwar - 2019]";
+        label = "Inspect Carved Desk [Ibrahim Anwar - 2026]";
       }
     }
 
@@ -1848,7 +1944,7 @@ class MidnightDetention3D {
   }
 
   /* ==========================================================================
-     13. 3D SPECTER AI & PROXIMITY EFFECTS
+     13. 3D SPECTER AI & PROXIMITY EFFECTS WITH ADVANCED HEARTBEAT
      ========================================================================== */
   updateSpecter(dt) {
     if (!this.specter.mesh || this.isSettingsOpen) return;
@@ -1857,10 +1953,21 @@ class MidnightDetention3D {
       this.specter.mesh.visible = false;
       this.specter.light.visible = false;
       this.audio.updateMonsterProximity(0);
+      
+      // Reset heartbeat UI
       this.ui.pulseDot.classList.remove('danger');
       this.ui.heartBarFill.classList.remove('danger');
       this.ui.heartbeatVignette.classList.remove('pulsing');
       this.ui.heartbeatVignette.style.opacity = "0";
+      
+      // Reset pulse dot to safe color
+      const safeColor = { bg: '#3aff6c', shadow: '0 0 8px #3aff6c' };
+      this.ui.pulseDot.style.background = safeColor.bg;
+      this.ui.pulseDot.style.boxShadow = safeColor.shadow;
+      this.ui.heartBarFill.style.background = safeColor.bg;
+      this.ui.bpmDisplay.textContent = '68';
+      this.ui.heartBarFill.style.width = '25%';
+      
       this.flashlight.intensity = 4.2;
       this.flashlight.color.setHex(0xfffae8);
       this.playerLight.color.setHex(0xfffae8);
@@ -1931,33 +2038,55 @@ class MidnightDetention3D {
 
     const maxDangerDist = 18.0;
     const proximityRatio = Math.max(0, Math.min(1, 1 - (dist / maxDangerDist)));
+    
+    // ===== ADVANCED HEARTBEAT SYSTEM =====
+    const bpm = this.heartbeat.update(proximityRatio, this.specter.isChasing);
+    const pulseColor = this.heartbeat.getPulseColor();
+    const vignetteIntensity = this.heartbeat.getVignetteIntensity();
+    const heartBarWidth = this.heartbeat.getHeartBarWidth();
+    
+    // Update audio proximity
     this.audio.updateMonsterProximity(proximityRatio);
-
-    const bpm = this.audio.heartbeatBpm;
-    this.ui.bpmDisplay.textContent = bpm;
-    this.ui.heartBarFill.style.width = `${Math.min(100, Math.round((bpm / 180) * 100))}%`;
-
-    if (proximityRatio > 0.25) {
+    
+    // Update UI
+    this.ui.bpmDisplay.textContent = Math.round(bpm);
+    this.ui.heartBarFill.style.width = `${heartBarWidth}%`;
+    
+    // Update pulse dot color based on danger level
+    this.ui.pulseDot.style.background = pulseColor.bg;
+    this.ui.pulseDot.style.boxShadow = pulseColor.shadow;
+    this.ui.heartBarFill.style.background = pulseColor.bg;
+    
+    // Update heartbeat vignette
+    if (proximityRatio > 0.15) {
       this.ui.pulseDot.classList.add('danger');
       this.ui.heartBarFill.classList.add('danger');
       this.ui.heartbeatVignette.classList.add('pulsing');
-      this.ui.heartbeatVignette.style.opacity = (proximityRatio * 0.9).toString();
-
-      this.flickerIntensity = proximityRatio;
-      if (Math.random() < this.flickerIntensity * 0.45) {
-        this.flashlight.intensity = 0.5 + Math.random() * 2.0;
-      } else {
-        this.flashlight.intensity = 4.2;
-      }
-
-      const redAmount = Math.min(1.0, proximityRatio * 1.3);
-      this.flashlight.color.setRGB(1.0, 0.98 * (1 - redAmount * 0.85), 0.91 * (1 - redAmount * 0.9));
-      this.playerLight.color.setRGB(1.0, 0.98 * (1 - redAmount * 0.85), 0.91 * (1 - redAmount * 0.9));
+      this.ui.heartbeatVignette.style.opacity = vignetteIntensity.toString();
+      
+      // Faster pulsing animation based on BPM
+      const pulseSpeed = Math.min(0.4, 0.8 / (bpm / 68));
+      this.ui.heartbeatVignette.style.animationDuration = `${pulseSpeed}s`;
     } else {
       this.ui.pulseDot.classList.remove('danger');
       this.ui.heartBarFill.classList.remove('danger');
       this.ui.heartbeatVignette.classList.remove('pulsing');
       this.ui.heartbeatVignette.style.opacity = "0";
+    }
+
+    // Flashlight flicker based on proximity
+    if (proximityRatio > 0.2) {
+      this.flickerIntensity = proximityRatio;
+      if (Math.random() < this.flickerIntensity * 0.4) {
+        this.flashlight.intensity = 0.5 + Math.random() * 2.0;
+      } else {
+        this.flashlight.intensity = 4.2;
+      }
+
+      const redAmount = Math.min(1.0, proximityRatio * 1.5);
+      this.flashlight.color.setRGB(1.0, 0.98 * (1 - redAmount * 0.85), 0.91 * (1 - redAmount * 0.9));
+      this.playerLight.color.setRGB(1.0, 0.98 * (1 - redAmount * 0.85), 0.91 * (1 - redAmount * 0.9));
+    } else {
       this.flashlight.intensity = 4.2;
       this.flashlight.color.setHex(0xfffae8);
       this.playerLight.color.setHex(0xfffae8);
@@ -2019,7 +2148,7 @@ class MidnightDetention3D {
   }
 
   resetGame() {
-    this.player.position.set(10.0, 1.7, 53.5);
+    this.player.position.set(2 * CELL_SIZE + CELL_SIZE / 2, 1.7, 13 * CELL_SIZE + CELL_SIZE / 2);
     this.player.rotation.set(0, 0, 0, 'YXZ');
     this.camera.position.copy(this.player.position);
     this.camera.rotation.copy(this.player.rotation);
@@ -2055,9 +2184,18 @@ class MidnightDetention3D {
     this.specter.patrolTimer = 0;
     this.entityEncounters = 0;
 
+    // Reset heartbeat
+    this.heartbeat = new HeartbeatSystem();
     this.audio.updateMonsterProximity(0);
     this.ui.heartbeatVignette.classList.remove('pulsing');
     this.ui.heartbeatVignette.style.opacity = "0";
+    
+    // Reset pulse dot
+    this.ui.pulseDot.style.background = '#3aff6c';
+    this.ui.pulseDot.style.boxShadow = '0 0 8px #3aff6c';
+    this.ui.heartBarFill.style.background = '#3aff6c';
+    this.ui.bpmDisplay.textContent = '68';
+    this.ui.heartBarFill.style.width = '25%';
 
     this.startTime = performance.now();
     this.showAlertBanner("DETENTION GATES LOCKED - FIND ALL 4 KEYS TO ESCAPE");
