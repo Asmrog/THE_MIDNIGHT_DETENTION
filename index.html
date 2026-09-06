@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#020205">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="The Midnight Detention - 3D First-Person Survival Horror Game.">
+  <title>The Midnight Detention (3D)</title>
+  
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,700;1,700&family=Cairo:wght@700;900&family=Cinzel:wght@600;800;900&family=Special+Elite&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome 6.5.1 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Three.js r128 Library for 3D WebGL Rendering -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <!-- Ambient Audio Unlock & Controls Guide -->
+  <div id="start-overlay" class="overlay">
+    <div class="intro-box">
+      <div class="game-badge"><i class="fa-solid fa-triangle-exclamation"></i> SURVIVAL HORROR EXPERIENCE</div>
+      <h1 class="main-title">THE MIDNIGHT DETENTION</h1>
+      <p class="subtitle"><i class="fa-solid fa-headphones"></i> Put on headphones for full binaural 3D audio immersion.</p>
+      
+      <div class="intro-controls-summary">
+        <div class="control-col">
+          <span class="ctrl-icon"><i class="fa-solid fa-keyboard"></i></span>
+          <span class="ctrl-desc">Desktop: Click to Lock Look &bull; WASD / ZQSD / Arrows to Walk &bull; E to Interact &bull; F for Flashlight</span>
+        </div>
+        <div class="control-col">
+          <span class="ctrl-icon"><i class="fa-solid fa-mobile-screen"></i></span>
+          <span class="ctrl-desc">Mobile: Left D-Pad to Walk &bull; Swipe Right Screen to Look &bull; ACTION to Interact</span>
+        </div>
+      </div>
+
+      <div class="intro-buttons-row">
+        <button id="btn-begin" class="btn-horror">
+          <span class="btn-glitch" data-text="WAKE UP">WAKE UP</span>
+        </button>
+        <button id="btn-settings-start" class="btn-horror btn-secondary">
+          <i class="fa-solid fa-gear"></i> SETTINGS
+        </button>
+      </div>
+      <div class="audio-notice">WebGL 3D & Procedural Audio initialize upon entering</div>
+    </div>
+  </div>
+
+  <!-- Settings & Credits Modal Overlay -->
+  <div id="settings-overlay" class="overlay hidden">
+    <div class="settings-box glassmorphism">
+      <div class="settings-header">
+        <h2 class="settings-title"><i class="fa-solid fa-sliders"></i> SETTINGS & CREDITS</h2>
+        <button id="btn-close-settings" class="btn-close-modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Audio & AI Settings -->
+      <div class="settings-section">
+        <div class="section-title"><i class="fa-solid fa-volume-high"></i> AUDIO & AI CONTROLS</div>
+        
+        <div class="setting-row">
+          <div class="setting-info">
+            <span class="setting-name">Master Audio</span>
+            <span class="setting-desc">Enable or mute all procedural 3D sound effects & ambient hum</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-sound" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <span class="setting-name">Master Volume</span>
+            <span id="volume-value" class="setting-desc">85%</span>
+          </div>
+          <input type="range" id="volume-slider" min="0" max="100" value="85" class="range-slider">
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <span class="setting-name">Specter Entity AI</span>
+            <span class="setting-desc">Enable enemy stalker & jumpscares (Turn OFF for Safe Exploration)</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-ghost" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Developer Credits Section -->
+      <div class="settings-section credits-section">
+        <div class="section-title"><i class="fa-solid fa-code"></i> DEVELOPER CREDITS</div>
+        <div class="credit-badge">LEAD DEVELOPER</div>
+        
+        <div class="credit-card">
+          <div class="credit-avatar"><i class="fa-solid fa-terminal"></i></div>
+          <div class="credit-details">
+            <div class="developer-name">Ibrahim Anwar <span class="ar-name">(ابراهيم أنور)</span></div>
+            <div class="developer-role"><i class="fa-solid fa-shield-halved"></i> Lead Game Developer & 3D WebGL Architect</div>
+            <div class="developer-bio">Designed & engineered all 3D Three.js school architecture, dynamic shadows, procedural Web Audio synthesizer, and cinematic endings.</div>
+          </div>
+        </div>
+
+        <div class="secret-hint">
+          <span><i class="fa-solid fa-magnifying-glass"></i> Secret Easter Egg: Inspect the wooden desk in the detention room to find the developer signature: <strong>Ibrahim Anwar - 2019</strong></span>
+        </div>
+      </div>
+
+      <button id="btn-save-settings" class="btn-horror btn-full">
+        <span>RESUME GAME</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Cinematic Opening Scene -->
+  <div id="cinematic-overlay" class="overlay hidden">
+    <!-- Eyelids wake-up effect -->
+    <div id="eyelid-top" class="eyelid"></div>
+    <div id="eyelid-bottom" class="eyelid"></div>
+    
+    <div class="typewriter-container">
+      <div id="typewriter-text" class="typewriter-text"></div>
+      <div id="typewriter-prompt" class="typewriter-prompt hidden">
+        <span>[ Click anywhere to open your eyes ]</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main 3D Game Container -->
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Center FPS Reticle / Crosshair -->
+    <div id="crosshair" class="crosshair">
+      <div class="crosshair-dot"></div>
+    </div>
+
+    <!-- Mobile Touch Look Area (Captures swipe gestures on right half of screen) -->
+    <div id="touch-look-zone" class="touch-look-zone"></div>
+
+    <!-- Post-Processing & Horror Atmosphere Overlays -->
+    <div id="vignette" class="vignette"></div>
+    <div id="heartbeat-vignette" class="heartbeat-vignette"></div>
+    <div id="noise-overlay" class="noise-overlay"></div>
+    <div id="blood-overlay" class="blood-overlay"></div>
+
+    <!-- HUD Overlay -->
+    <div id="hud">
+      <div class="hud-top-bar">
+        <!-- Objective & Location -->
+        <div class="hud-card objective-card">
+          <div class="hud-label"><i class="fa-solid fa-compass"></i> OBJECTIVE</div>
+          <div id="objective-text" class="objective-value">Search the 4 rooms & collect the 4 keys</div>
+        </div>
+
+        <!-- Keys Inventory -->
+        <div class="hud-card keys-card">
+          <div class="hud-label"><i class="fa-solid fa-key"></i> KEYS</div>
+          <div class="keys-display">
+            <span class="key-icon">🗝️</span>
+            <span id="key-count">0</span>
+            <span class="key-total">/ 4</span>
+          </div>
+          <div class="key-slots">
+            <div id="slot-0" class="key-slot" title="Teacher's Room Key"></div>
+            <div id="slot-1" class="key-slot" title="Science Lab Key"></div>
+            <div id="slot-2" class="key-slot" title="Library Key"></div>
+            <div id="slot-3" class="key-slot" title="Principal's Golden Key"></div>
+          </div>
+        </div>
+
+        <!-- Heartbeat & Danger Indicator -->
+        <div class="hud-card heart-card">
+          <div class="hud-label"><i class="fa-solid fa-heart-pulse"></i> PULSE</div>
+          <div class="pulse-status">
+            <div id="pulse-dot" class="pulse-dot"></div>
+            <span id="bpm-display">68</span>
+            <span class="bpm-unit">BPM</span>
+          </div>
+          <div class="heart-bar-track">
+            <div id="heart-bar-fill" class="heart-bar-fill"></div>
+          </div>
+        </div>
+
+        <!-- In-Game Settings Button -->
+        <button id="btn-hud-settings" class="hud-settings-btn" title="Settings & Credits" aria-label="Settings">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+
+      <!-- Center Dynamic Action Prompt / Interaction Hint -->
+      <div id="interaction-prompt" class="interaction-prompt hidden">
+        <div class="prompt-key">[E]</div>
+        <div id="prompt-label" class="prompt-label">Interact</div>
+      </div>
+
+      <!-- Quick Message Banner -->
+      <div id="alert-banner" class="alert-banner hidden"></div>
+
+      <!-- Pointer Lock Instruction Hint (Desktop) -->
+      <div id="pointer-lock-hint" class="pointer-lock-hint hidden">
+        <span>Click screen to lock cursor (ESC for settings)</span>
+      </div>
+
+      <!-- Mobile Touch Controls -->
+      <div id="mobile-controls" class="mobile-controls">
+        <div class="dpad-cluster">
+          <div class="dpad-row">
+            <button id="dpad-up" class="dpad-btn dpad-up" aria-label="Forward"><i class="fa-solid fa-chevron-up"></i></button>
+          </div>
+          <div class="dpad-row middle-row">
+            <button id="dpad-left" class="dpad-btn dpad-left" aria-label="Strafe Left"><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="dpad-center"></div>
+            <button id="dpad-right" class="dpad-btn dpad-right" aria-label="Strafe Right"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+          <div class="dpad-row">
+            <button id="dpad-down" class="dpad-btn dpad-down" aria-label="Backward"><i class="fa-solid fa-chevron-down"></i></button>
+          </div>
+        </div>
+
+        <div class="mobile-action-cluster">
+          <button id="btn-mobile-interact" class="mobile-action-btn" aria-label="Interact">
+            <i class="fa-solid fa-hand"></i>
+            <span>ACTION</span>
+          </button>
+          <button id="btn-mobile-flashlight" class="mobile-action-btn" aria-label="Toggle Flashlight">
+            <i class="fa-solid fa-lightbulb"></i>
+            <span>LIGHT</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jumpscare Shock Scene -->
+  <div id="jumpscare-overlay" class="overlay hidden">
+    <div class="jumpscare-face">
+      <div class="specter-eyes"></div>
+      <div class="specter-maw"></div>
+    </div>
+    <div class="glitch-slashes"></div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameover-overlay" class="overlay hidden">
+    <div class="ending-box gameover-box">
+      <div class="skull-icon"><i class="fa-solid fa-skull"></i></div>
+      <h2 class="ending-title gameover-title">THE DOORS ARE LOCKED FOREVER</h2>
+      <p class="ending-quote">"The darkness inside the detention halls swallowed another forgotten soul..."</p>
+      
+      <div class="stats-card">
+        <div class="stat-row">
+          <span>Keys Recovered:</span>
+          <span id="final-keys" class="stat-val">0 / 4</span>
+        </div>
+        <div class="stat-row">
+          <span>Survival Duration:</span>
+          <span id="final-survival-time" class="stat-val">00:00</span>
+        </div>
+      </div>
+
+      <div class="ending-buttons-row">
+        <button id="btn-restart" class="btn-horror btn-retry">
+          <i class="fa-solid fa-rotate-right"></i> TRY AGAIN
+        </button>
+        <button id="btn-gameover-settings" class="btn-horror btn-secondary">
+          <i class="fa-solid fa-gear"></i> SETTINGS
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legendary Dacia Duster 2019 Win / Escape Screen -->
+  <div id="win-overlay" class="overlay hidden">
+    <div class="sunlight-flare"></div>
+    <div class="ending-box win-box dacia-win-box">
+      <div class="dawn-badge"><i class="fa-solid fa-car-side"></i> THE LEGENDARY ESCAPE &bull; DACIA DUSTER 2019</div>
+      
+      <!-- Iconic Moroccan Darija Quote -->
+      <div class="dacia-darija-quote">
+        "فهد البلاد السعيدة كاينين شي ناس فيهم غير الحضية تتبدا سميتهم بحرف جيم"
+      </div>
+
+      <h2 class="ending-title win-title">YOU ESCAPED IN THE DUSTER!</h2>
+      <p class="win-quote">The heavy iron school gates swing wide open! You sprint across the courtyard to your waiting <strong>Dacia Duster 2019</strong>, turn the key, ignite the engine, and speed away into the morning dawn!</p>
+      
+      <!-- Specter Rearview Mirror Twist -->
+      <div class="rearview-mirror-easteregg">
+        <div class="mirror-icon"><i class="fa-solid fa-eye"></i></div>
+        <div class="mirror-text">In the car's rearview mirror, the Specter stands in the rising mist, waving with a faint, chilling smile...</div>
+      </div>
+
+      <div class="stats-card win-stats">
+        <div class="stat-row">
+          <span>Getaway Vehicle:</span>
+          <span class="stat-val win-val">Dacia Duster (2019 Edition) <i class="fa-solid fa-check-double"></i></span>
+        </div>
+        <div class="stat-row">
+          <span>All 4 School Keys:</span>
+          <span class="stat-val win-val">Recovered (100%)</span>
+        </div>
+        <div class="stat-row">
+          <span>Survival Time:</span>
+          <span id="win-survival-time" class="stat-val win-val">00:00</span>
+        </div>
+        <div class="stat-row">
+          <span>Lead Developer:</span>
+          <span class="stat-val win-val">Ibrahim Anwar (ابراهيم أنور)</span>
+        </div>
+      </div>
+
+      <div class="ending-buttons-row">
+        <button id="btn-play-again" class="btn-horror btn-dawn">
+          <i class="fa-solid fa-play"></i> PLAY AGAIN
+        </button>
+        <button id="btn-win-settings" class="btn-horror btn-secondary">
+          <i class="fa-solid fa-gear"></i> CREDITS
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
